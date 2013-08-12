@@ -59,7 +59,8 @@ public class OAuth1 {
 	private Signer signer;
 	private String callback;
 	private AccessToken accessToken;
-
+        private ActionListener errorListener;
+        
 	public OAuth1(String callback) {
 		this.callback = callback;
 		Hashtable c = getCredentials();
@@ -143,12 +144,19 @@ public class OAuth1 {
 		final Form backForm = (currentForm == null) ? Display.getInstance().getCurrent() : currentForm;
 
 		RequestTokenRequest rtr = new RequestTokenRequest(serviceProvider, requestSigner, callback);
+                if(errorListener != null){
+                    rtr.addResponseCodeListener(errorListener);
+                }
 		// Retrieve (and wait) for the request token
 		NetworkManager.getInstance().addToQueueAndWait(rtr);
 		RequestToken requestToken = rtr.getToken();
-		
+		if(requestToken == null){
+                    return;
+                }
 		// Use the request token to retrieve an access token for the authorizing user.
 		final ObservableWebBrowser wb = new ObservableWebBrowser();
+                wb.addErrorListener(errorListener);
+                
 		AccessTokenRequest atr = new AccessTokenRequest(serviceProvider, signer, requestToken);
 		atr.addReceiveTokenListener(new ActionListener() {
 			public void actionPerformed(ActionEvent evt) {
@@ -271,4 +279,10 @@ public class OAuth1 {
 	public AccessToken getAccessToken() {
 		return accessToken;
 	}
+
+    public void setErrorListener(ActionListener errorListener) {
+        this.errorListener = errorListener;
+    }
+        
+        
 }

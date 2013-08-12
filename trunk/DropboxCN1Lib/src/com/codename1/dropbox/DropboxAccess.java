@@ -33,7 +33,9 @@ public class DropboxAccess {
     private static String consumerKey = "jl0tt1rz7r5f5lq";
     private OAuth1 oauth;
     private static DropboxAccess instance = new DropboxAccess();
-
+    
+    private ActionListener errorListener;
+    
     public static void setCALLBACK(String CALLBACK) {
         DropboxAccess.CALLBACK = CALLBACK;
     }
@@ -85,6 +87,9 @@ public class DropboxAccess {
                 });
             }
         };
+        if(errorListener != null){
+            oauth.setErrorListener(errorListener);
+        }
         oauth.authenticate(Display.getInstance().getCurrent());
     }
 
@@ -110,6 +115,9 @@ public class DropboxAccess {
             }
         });
         oauth.signRequest(service);
+        if(errorListener != null){
+            service.addResponseCodeListener(errorListener);
+        }
         NetworkManager.getInstance().addToQueueAndWait(service);
         return files;
     }
@@ -136,6 +144,9 @@ public class DropboxAccess {
             });
             service.addArgument("format", jpeg ? "jpeg" : "png");
             service.addArgument("size", size);
+            if(errorListener != null){
+                service.addResponseCodeListener(errorListener);
+            }
             oauth.signRequest(service);
             NetworkManager.getInstance().addToQueueAndWait(service);
 
@@ -151,7 +162,19 @@ public class DropboxAccess {
     public byte[] downloadFile(String filePath) {
         DownloadUploadService req = new DownloadUploadService(true, filePath);
         oauth.signRequest(req);
+        if(errorListener != null){
+            req.addResponseCodeListener(errorListener);
+        }
         NetworkManager.getInstance().addToQueueAndWait(req);
         return req.getFileData();
     }
+
+    /**
+     * set an error listener to handle the errors yourself
+     */ 
+    public void setErrorListener(ActionListener errorListener) {
+        this.errorListener = errorListener;
+    }
+    
+    
 }
